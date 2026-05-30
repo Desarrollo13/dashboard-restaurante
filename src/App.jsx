@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard'
 import Ordenes   from './pages/Ordenes'
 import Productos from './pages/Productos'
 import Mozos     from './pages/Mozos'
+import Menu from './pages/Menu'
 
 export default function App() {
   return (
@@ -14,29 +15,50 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          }/>
-          <Route path="/ordenes" element={
-            <PrivateRoute>
-              <Ordenes />
-            </PrivateRoute>
-          }/>
-          <Route path="/productos" element={
-            <PrivateRoute>
-              <Productos />
-            </PrivateRoute>
-          }/>
-          <Route path="/mozos" element={
-            <PrivateRoute>
-              <Mozos />
-            </PrivateRoute>
-          }/>
+          <Route
+            path="/"
+            element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/ordenes"
+            element={
+              <PrivateRoute>
+                <Ordenes />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/productos"
+            element={
+              <PrivateRoute>
+                <Productos />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/mozos"
+            element={
+              <PrivateRoute>
+                <Mozos />
+              </PrivateRoute>
+            }
+          />
+          // dentro de Routes agregá:
+          <Route
+            path="/menu"
+            element={
+              <PrivateRoute>
+                <Menu />
+              </PrivateRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
-  )
+  );
 }

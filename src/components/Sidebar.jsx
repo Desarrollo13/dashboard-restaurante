@@ -2,10 +2,12 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
+// src/components/Sidebar.jsx — actualizá el array links
 const links = [
   { to: '/',          icon: '📊', label: 'Resumen'   },
   { to: '/ordenes',   icon: '📋', label: 'Órdenes'   },
-  { to: '/productos', icon: '🍽️', label: 'Productos' },
+  { to: '/menu',      icon: '🍽️', label: 'Menú'      }, // ← nuevo
+  { to: '/productos', icon: '📈', label: 'Productos' },
   { to: '/mozos',     icon: '👥', label: 'Mozos'     },
 ]
 
