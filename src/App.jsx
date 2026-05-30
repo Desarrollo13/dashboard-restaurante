@@ -9,6 +9,7 @@ import Productos from './pages/Productos'
 import Mozos     from './pages/Mozos'
 import Menu from './pages/Menu'
 import Usuarios from './pages/Usuarios'
+import Mesas from './pages/Mesas'
 
 export default function App() {
   return (
@@ -63,6 +64,15 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Usuarios />
+              </PrivateRoute>
+            }
+          />
+          import Mesas from './pages/Mesas'
+          <Route
+            path="/mesas"
+            element={
+              <PrivateRoute>
+                <Mesas />
               </PrivateRoute>
             }
           />

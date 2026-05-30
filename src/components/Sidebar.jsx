@@ -4,11 +4,13 @@ import { useAuth } from '../context/AuthContext'
 
 // src/components/Sidebar.jsx — actualizá el array links
 // src/components/Sidebar.jsx
+// src/components/Sidebar.jsx
 const links = [
   { to: '/',          icon: '📊', label: 'Resumen'   },
   { to: '/ordenes',   icon: '📋', label: 'Órdenes'   },
+  { to: '/mesas',     icon: '🪑', label: 'Mesas'     }, // ← nuevo
   { to: '/menu',      icon: '🍽️', label: 'Menú'      },
-  { to: '/usuarios',  icon: '👤', label: 'Usuarios'  }, // ← nuevo
+  { to: '/usuarios',  icon: '👤', label: 'Usuarios'  },
   { to: '/productos', icon: '📈', label: 'Productos' },
   { to: '/mozos',     icon: '👥', label: 'Mozos'     },
 ]
