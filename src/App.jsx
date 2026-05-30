@@ -8,6 +8,7 @@ import Ordenes   from './pages/Ordenes'
 import Productos from './pages/Productos'
 import Mozos     from './pages/Mozos'
 import Menu from './pages/Menu'
+import Usuarios from './pages/Usuarios'
 
 export default function App() {
   return (
@@ -53,6 +54,15 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Menu />
+              </PrivateRoute>
+            }
+          />
+          // dentro de Routes:
+          <Route
+            path="/usuarios"
+            element={
+              <PrivateRoute>
+                <Usuarios />
               </PrivateRoute>
             }
           />
