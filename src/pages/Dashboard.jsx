@@ -1,8 +1,10 @@
 // src/pages/Dashboard.jsx
-import { useEffect, useState } from 'react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts'
+import { useEffect, useState, useCallback } from 'react'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import api from '../api/axios'
 import Layout from '../components/Layout'
+import toast from 'react-hot-toast'
+import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
 function StatCard({ icon, label, value, color }) {
   return (
@@ -19,31 +21,35 @@ function StatCard({ icon, label, value, color }) {
 }
 
 export default function Dashboard() {
-  const [resumen,   setResumen]   = useState(null)
-  const [mensual,   setMensual]   = useState([])
-  const [loading,   setLoading]   = useState(true)
+  const [resumen,              setResumen]              = useState(null)
+  const [mensual,              setMensual]              = useState([])
+  const [loading,              setLoading]              = useState(true)
+  const [ultimaActualizacion,  setUltimaActualizacion]  = useState(null)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [resumenRes, mensualRes] = await Promise.all([
-          api.get('/reportes/resumen/'),
-          api.get('/reportes/ventas/mensuales/?meses=6'),
-        ])
-        setResumen(resumenRes.data)
-        setMensual(mensualRes.data.resultados.map(r => ({
-          mes:    new Date(r.mes).toLocaleDateString('es-AR', { month: 'short', year: '2-digit' }),
-          ventas: parseFloat(r.total_ventas || 0),
-          ordenes: r.total_ordenes,
-        })))
-      } catch (err) {
-        console.error(err)
-      } finally {
-        setLoading(false)
-      }
+  const fetchData = useCallback(async (silencioso = false) => {
+    if (!silencioso) setLoading(true)
+    try {
+      const [resumenRes, mensualRes] = await Promise.all([
+        api.get('/reportes/resumen/'),
+        api.get('/reportes/ventas/mensuales/?meses=6'),
+      ])
+      setResumen(resumenRes.data)
+      setMensual(mensualRes.data.resultados.map(r => ({
+        mes:    new Date(r.mes).toLocaleDateString('es-AR', { month: 'short', year: '2-digit' }),
+        ventas: parseFloat(r.total_ventas || 0),
+        ordenes: r.total_ordenes,
+      })))
+      setUltimaActualizacion(new Date())
+      if (!silencioso) toast.success('Datos actualizados')
+    } catch {
+      toast.error('Error al cargar los datos')
+    } finally {
+      setLoading(false)
     }
-    fetchData()
   }, [])
+
+  useEffect(() => { fetchData() }, [fetchData])
+  useAutoRefresh(() => fetchData(true), 60)
 
   if (loading) return (
     <Layout>
@@ -55,9 +61,25 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <h2 className="text-white text-2xl font-bold mb-6">
-        Resumen del día — {resumen?.fecha}
-      </h2>
+      {/* Header con última actualización */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-white text-2xl font-bold">
+            Resumen del día — {resumen?.fecha}
+          </h2>
+          {ultimaActualizacion && (
+            <p className="text-gray-500 text-xs mt-1">
+              Actualizado: {ultimaActualizacion.toLocaleTimeString('es-AR')} · se refresca cada 60s
+            </p>
+          )}
+        </div>
+        <button
+          onClick={() => fetchData()}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm transition"
+        >
+          🔄 Actualizar
+        </button>
+      </div>
 
       {/* Tarjetas de stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

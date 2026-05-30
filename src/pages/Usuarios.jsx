@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import api from '../api/axios'
 import Layout from '../components/Layout'
+import toast from 'react-hot-toast'
 
 const ROLES = [
   { value: 'administrador', label: 'Administrador', color: 'bg-red-500/20 text-red-400 border border-red-500' },
@@ -47,6 +48,7 @@ function ModalUsuario({ usuario, onGuardar, onCerrar }) {
       } else {
         await api.post('/usuarios/', payload)
       }
+      toast.success(usuario ? 'Usuario actualizado' : 'Usuario creado')
       onGuardar()
     } catch (err) {
       const data = err.response?.data
@@ -193,6 +195,7 @@ export default function Usuarios() {
       await api.delete(`/usuarios/${id}/`)
       setConfirmEliminar(null)
       fetchUsuarios()
+      toast.success('Usuario eliminado')
     } catch {
       alert('No se puede eliminar este usuario.')
     }
@@ -328,7 +331,7 @@ export default function Usuarios() {
       {/* Modal usuario */}
       {modalUsuario && (
         <ModalUsuario
-          usuario={usuarioEditar}
+          usuario={usuarioEditar}          
           onGuardar={() => { setModalUsuario(false); fetchUsuarios() }}
           onCerrar={() => setModalUsuario(false)}
         />

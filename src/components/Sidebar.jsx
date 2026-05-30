@@ -19,20 +19,22 @@ export default function Sidebar() {
     <aside className="w-64 bg-gray-900 min-h-screen flex flex-col">
       <div className="p-6 border-b border-gray-700">
         <h1 className="text-white text-xl font-bold">🍽️ Restaurante</h1>
-        <p className="text-gray-400 text-sm mt-1">{user?.nombre || user?.rol}</p>
+        <p className="text-gray-400 text-sm mt-1">
+          {user?.nombre || user?.rol}
+        </p>
       </div>
-
       <nav className="flex-1 p-4 space-y-1">
-        {links.map(link => (
+        {links.map((link) => (
           <NavLink
             key={link.to}
             to={link.to}
-            end={link.to === '/'}
+            end={link.to === "/"}
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-lg transition text-sm font-medium
-              ${isActive
-                ? 'bg-indigo-600 text-white'
-                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+              ${
+                isActive
+                  ? "bg-indigo-600 text-white"
+                  : "text-gray-400 hover:bg-gray-800 hover:text-white"
               }`
             }
           >
@@ -41,7 +43,13 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
-
+      // src/components/Sidebar.jsx — agregá esto debajo del nav
+      <div className="px-4 py-2">
+        <div className="flex items-center gap-2 text-gray-600 text-xs">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          En vivo · 30s
+        </div>
+      </div>
       <div className="p-4 border-t border-gray-700">
         <button
           onClick={logout}
@@ -51,5 +59,5 @@ export default function Sidebar() {
         </button>
       </div>
     </aside>
-  )
+  );
 }

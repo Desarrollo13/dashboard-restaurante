@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import api from '../api/axios'
 import Layout from '../components/Layout'
+import toast from 'react-hot-toast'
 
 // ── Modal para crear/editar producto ──────────────────────────────────────────
 function ModalProducto({ producto, categorias, onGuardar, onCerrar }) {
@@ -20,23 +21,25 @@ function ModalProducto({ producto, categorias, onGuardar, onCerrar }) {
     setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }))
   }
 
-  const handleSubmit = async e => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+  // ✅ Después — con toast
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
     try {
       if (producto) {
-        await api.put(`/menu/${producto.id}/`, form)
+        await api.put(`/menu/${producto.id}/`, form);
       } else {
-        await api.post('/menu/', form)
+        await api.post("/menu/", form);
       }
-      onGuardar()
+      toast.success(producto ? "Producto actualizado ✅" : "Producto creado ✅"); // ← acá
+      onGuardar();
     } catch (err) {
-      setError(err.response?.data?.detail || 'Error al guardar el producto.')
+      setError(err.response?.data?.detail || "Error al guardar el producto.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
@@ -202,7 +205,9 @@ export default function Menu() {
       await api.delete(`/menu/${id}/`)
       setConfirmEliminar(null)
       fetchData()
+      toast.success('Producto eliminado') 
     } catch {
+      toast.error('Error al eliminar el producto')
       alert('Error al eliminar el producto.')
     }
   }
@@ -212,6 +217,9 @@ export default function Menu() {
       disponible: !producto.disponible
     })
     fetchData()
+    toast.success(                               // ← agregar
+    producto.disponible ? 'Producto desactivado' : 'Producto activado'
+  )
   }
 
   // Filtros locales
@@ -357,7 +365,7 @@ export default function Menu() {
       {modalProducto && (
         <ModalProducto
           producto={productoEditar}
-          categorias={categorias}
+          categorias={categorias}          
           onGuardar={() => { setModalProducto(false); fetchData() }}
           onCerrar={() => setModalProducto(false)}
         />

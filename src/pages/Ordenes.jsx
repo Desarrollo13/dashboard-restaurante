@@ -1,15 +1,17 @@
 // src/pages/Ordenes.jsx
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import api from '../api/axios'
 import Layout from '../components/Layout'
+import toast from 'react-hot-toast'
+import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
 const ESTADOS = [
-  { value: '',          label: 'Todas',     color: 'bg-gray-600' },
-  { value: 'abierta',   label: 'Abiertas',  color: 'bg-blue-600' },
-  { value: 'en_cocina', label: 'En cocina', color: 'bg-yellow-600' },
-  { value: 'lista',     label: 'Listas',    color: 'bg-green-600' },
-  { value: 'cerrada',   label: 'Cerradas',  color: 'bg-gray-500' },
-  { value: 'cancelada', label: 'Canceladas',color: 'bg-red-600' },
+  { value: '',          label: 'Todas',      color: 'bg-gray-600' },
+  { value: 'abierta',   label: 'Abiertas',   color: 'bg-blue-600' },
+  { value: 'en_cocina', label: 'En cocina',  color: 'bg-yellow-600' },
+  { value: 'lista',     label: 'Listas',     color: 'bg-green-600' },
+  { value: 'cerrada',   label: 'Cerradas',   color: 'bg-gray-500' },
+  { value: 'cancelada', label: 'Canceladas', color: 'bg-red-600' },
 ]
 
 const BADGE = {
@@ -66,7 +68,6 @@ function OrdenCard({ orden }) {
         </div>
       </div>
 
-      {/* Items de la orden */}
       {orden.items?.length > 0 && (
         <div className="border-t border-gray-700 pt-3 space-y-1">
           {orden.items.map((item, i) => (
@@ -87,14 +88,15 @@ function OrdenCard({ orden }) {
 }
 
 export default function Ordenes() {
-  const [ordenes,       setOrdenes]       = useState([])
-  const [estadoFiltro,  setEstadoFiltro]  = useState('')
-  const [fecha,         setFecha]         = useState(new Date().toISOString().split('T')[0])
-  const [loading,       setLoading]       = useState(true)
-  const [contadores,    setContadores]    = useState({})
+  const [ordenes,             setOrdenes]             = useState([])
+  const [estadoFiltro,        setEstadoFiltro]        = useState('')
+  const [fecha,               setFecha]               = useState(new Date().toISOString().split('T')[0])
+  const [loading,             setLoading]             = useState(true)
+  const [contadores,          setContadores]          = useState({})
+  const [ultimaActualizacion, setUltimaActualizacion] = useState(null)
 
-  const fetchOrdenes = async () => {
-    setLoading(true)
+  const fetchOrdenes = useCallback(async (silencioso = false) => {
+    if (!silencioso) setLoading(true)
     try {
       const { data } = await api.get('/ordenes/')
       let todas = data.results || data
@@ -117,14 +119,16 @@ export default function Ordenes() {
       }
 
       setOrdenes(todas)
+      setUltimaActualizacion(new Date())
+    } catch {
+      if (!silencioso) toast.error('Error al cargar las órdenes')
     } finally {
-      setLoading(false)
+      if (!silencioso) setLoading(false)
     }
-  }
+  }, [fecha, estadoFiltro])
 
-  useEffect(() => {
-    fetchOrdenes()
-  }, [estadoFiltro, fecha])
+  useEffect(() => { fetchOrdenes() }, [fetchOrdenes])
+  useAutoRefresh(() => fetchOrdenes(true), 30)
 
   const totalDia = ordenes.reduce((acc, o) => acc + parseFloat(o.total || 0), 0)
 
@@ -132,16 +136,22 @@ export default function Ordenes() {
     <Layout>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-white text-2xl font-bold">📋 Órdenes</h2>
+        <div>
+          <h2 className="text-white text-2xl font-bold">📋 Órdenes</h2>
+          {ultimaActualizacion && (
+            <p className="text-gray-500 text-xs mt-1">
+              Actualizado: {ultimaActualizacion.toLocaleTimeString('es-AR')} · se refresca cada 30s
+            </p>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           <input
-            type="date"
-            value={fecha}
+            type="date" value={fecha}
             onChange={e => setFecha(e.target.value)}
             className="bg-gray-800 text-white rounded-lg px-4 py-2 border border-gray-700 text-sm"
           />
           <button
-            onClick={fetchOrdenes}
+            onClick={() => fetchOrdenes()}
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm transition"
           >
             🔄 Actualizar
@@ -208,7 +218,10 @@ export default function Ordenes() {
         <div className="bg-gray-800 rounded-2xl p-12 text-center">
           <p className="text-gray-400 text-lg">No hay órdenes para mostrar</p>
           <p className="text-gray-600 text-sm mt-2">
-            {estadoFiltro ? `No hay órdenes con estado "${estadoFiltro}"` : 'No hay órdenes para esta fecha'}
+            {estadoFiltro
+              ? `No hay órdenes con estado "${estadoFiltro}"`
+              : 'No hay órdenes para esta fecha'
+            }
           </p>
         </div>
       )}
