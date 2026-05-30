@@ -5,6 +5,8 @@ import api from '../api/axios'
 import Layout from '../components/Layout'
 import toast from 'react-hot-toast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
+import { useExport } from '../hooks/useExport'
+import BotonesExport from '../components/BotonesExport'
 
 function StatCard({ icon, label, value, color }) {
   return (
@@ -21,10 +23,12 @@ function StatCard({ icon, label, value, color }) {
 }
 
 export default function Dashboard() {
-  const [resumen,              setResumen]              = useState(null)
-  const [mensual,              setMensual]              = useState([])
-  const [loading,              setLoading]              = useState(true)
-  const [ultimaActualizacion,  setUltimaActualizacion]  = useState(null)
+  const [resumen,             setResumen]             = useState(null)
+  const [mensual,             setMensual]             = useState([])
+  const [loading,             setLoading]             = useState(true)
+  const [ultimaActualizacion, setUltimaActualizacion] = useState(null)
+
+  const { exportarPDF, exportarExcel } = useExport()
 
   const fetchData = useCallback(async (silencioso = false) => {
     if (!silencioso) setLoading(true)
@@ -51,6 +55,28 @@ export default function Dashboard() {
   useEffect(() => { fetchData() }, [fetchData])
   useAutoRefresh(() => fetchData(true), 60)
 
+  // ── Exportación ────────────────────────────────────────────────────────────
+  const exportar = (tipo) => {
+    const columnas = ['Concepto', 'Valor']
+    const filas = [
+      ['Total vendido',      `$${parseFloat(resumen?.ventas?.total || 0).toLocaleString('es-AR')}`],
+      ['Órdenes cerradas',   resumen?.ordenes?.cerradas  || 0],
+      ['En cocina',          resumen?.ordenes?.en_cocina || 0],
+      ['Listas para cobrar', resumen?.ordenes?.listas    || 0],
+      ['Abiertas',           resumen?.ordenes?.abiertas  || 0],
+      ['Canceladas',         resumen?.ordenes?.canceladas|| 0],
+      ['— Efectivo',         `$${parseFloat(resumen?.ventas?.efectivo     || 0).toLocaleString('es-AR')}`],
+      ['— Tarjeta',          `$${parseFloat(resumen?.ventas?.tarjeta      || 0).toLocaleString('es-AR')}`],
+      ['— Transferencia',    `$${parseFloat(resumen?.ventas?.transferencia|| 0).toLocaleString('es-AR')}`],
+    ]
+    const titulo = `Resumen del día ${resumen?.fecha}`
+    if (tipo === 'pdf') {
+      exportarPDF(titulo, columnas, filas, 'resumen_dia')
+    } else {
+      exportarExcel(titulo, columnas, filas, 'resumen_dia')
+    }
+  }
+
   if (loading) return (
     <Layout>
       <div className="flex items-center justify-center h-64">
@@ -61,7 +87,7 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      {/* Header con última actualización */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-white text-2xl font-bold">
@@ -73,12 +99,20 @@ export default function Dashboard() {
             </p>
           )}
         </div>
-        <button
-          onClick={() => fetchData()}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm transition"
-        >
-          🔄 Actualizar
-        </button>
+        {/* ← Botones de exportación + actualizar */}
+        <div className="flex gap-2">
+          <BotonesExport
+            onPDF={() => exportar('pdf')}
+            onExcel={() => exportar('excel')}
+            disabled={!resumen}
+          />
+          <button
+            onClick={() => fetchData()}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm transition"
+          >
+            🔄 Actualizar
+          </button>
+        </div>
       </div>
 
       {/* Tarjetas de stats */}

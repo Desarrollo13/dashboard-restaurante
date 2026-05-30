@@ -3,11 +3,15 @@ import { useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import api from '../api/axios'
 import Layout from '../components/Layout'
+import { useExport } from '../hooks/useExport'
+import BotonesExport from '../components/BotonesExport'
 
 export default function Productos() {
   const [productos, setProductos] = useState([])
   const [dias,      setDias]      = useState(7)
   const [loading,   setLoading]   = useState(true)
+
+  const { exportarPDF, exportarExcel } = useExport()
 
   useEffect(() => {
     const fetch_ = async () => {
@@ -26,19 +30,44 @@ export default function Productos() {
     fetch_()
   }, [dias])
 
+  // ── Exportación ────────────────────────────────────────────────────────────
+  const exportar = (tipo) => {
+    const columnas = ['#', 'Producto', 'Cantidad vendida', 'Total generado']
+    const filas = productos.map((p, i) => [
+      i + 1,
+      p.nombre,
+      p.cantidad,
+      `$${p.total.toLocaleString('es-AR')}`,
+    ])
+    const titulo = `Productos más vendidos — últimos ${dias} días`
+    if (tipo === 'pdf') {
+      exportarPDF(titulo, columnas, filas, 'productos_vendidos')
+    } else {
+      exportarExcel(titulo, columnas, filas, 'productos_vendidos')
+    }
+  }
+
   return (
     <Layout>
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-white text-2xl font-bold">🍽️ Productos más vendidos</h2>
-        <select
-          value={dias}
-          onChange={e => setDias(Number(e.target.value))}
-          className="bg-gray-800 text-white rounded-lg px-4 py-2 border border-gray-700"
-        >
-          <option value={7}>Últimos 7 días</option>
-          <option value={30}>Últimos 30 días</option>
-          <option value={90}>Últimos 90 días</option>
-        </select>
+        <div className="flex gap-2 items-center">
+          <BotonesExport
+            onPDF={() => exportar('pdf')}
+            onExcel={() => exportar('excel')}
+            disabled={productos.length === 0}
+          />
+          <select
+            value={dias}
+            onChange={e => setDias(Number(e.target.value))}
+            className="bg-gray-800 text-white rounded-lg px-4 py-2 border border-gray-700"
+          >
+            <option value={7}>Últimos 7 días</option>
+            <option value={30}>Últimos 30 días</option>
+            <option value={90}>Últimos 90 días</option>
+          </select>
+        </div>
       </div>
 
       {loading ? (
