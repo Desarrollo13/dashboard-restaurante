@@ -34,6 +34,95 @@ const RESERVA_ESTADOS = {
   completada: 'bg-gray-500/20 text-gray-400 border border-gray-500',
 }
 
+// Modal crear mesa — agregá antes del ModalReserva
+function ModalMesa({ onGuardar, onCerrar }) {
+  const [form, setForm] = useState({
+    numero:    '',
+    capacidad: 4,
+  })
+  const [loading, setLoading] = useState(false)
+  const [error,   setError]   = useState('')
+  const [modalMesa, setModalMesa] = useState(false)
+
+  const handleSubmit = async e => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      await api.post('/mesas/', form)
+      toast.success('Mesa creada ✅')
+      onGuardar()
+    } catch (err) {
+      const data = err.response?.data
+      if (data) {
+        const msg = Object.entries(data)
+          .map(([k, v]) => `${Array.isArray(v) ? v.join(', ') : v}`)
+          .join(' | ')
+        setError(msg)
+      } else {
+        setError('Error al crear la mesa.')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-sm">
+        <h3 className="text-white text-xl font-bold mb-5">🪑 Nueva mesa</h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-gray-400 text-sm mb-1">Número de mesa</label>
+            <input
+              value={form.numero}
+              onChange={e => setForm(f => ({ ...f, numero: e.target.value }))}
+              type="number" min={1} required placeholder="Ej: 5"
+              className="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-400 text-sm mb-1">Capacidad (personas)</label>
+            <input
+              value={form.capacidad}
+              onChange={e => setForm(f => ({ ...f, capacidad: e.target.value }))}
+              type="number" min={1} max={20} required
+              className="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          {error && (
+            <div className="bg-red-500/20 border border-red-500 text-red-400 px-4 py-2 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onCerrar}
+              className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg transition">
+              Cancelar
+            </button>
+            <button type="submit" disabled={loading}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg transition disabled:opacity-50">
+              {loading ? 'Guardando...' : 'Crear mesa'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+{/* Modal nueva mesa */}
+{modalMesa && (
+  <ModalMesa
+    onGuardar={() => { setModalMesa(false); fetchData(true) }}
+    onCerrar={() => setModalMesa(false)}
+  />
+)}
+
+
+
 // ── Modal crear reserva ────────────────────────────────────────────────────────
 function ModalReserva({ mesas, onGuardar, onCerrar }) {
   const [form, setForm] = useState({
@@ -242,33 +331,46 @@ export default function Mesas() {
   return (
     <Layout>
       {/* Header */}
+      {/* Header — reemplazá el div existente */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-white text-2xl font-bold">🪑 Mesas y Reservas</h2>
           {ultimaAct && (
             <p className="text-gray-500 text-xs mt-1">
-              Actualizado: {ultimaAct.toLocaleTimeString('es-AR')} · refresca cada 30s
+              Actualizado: {ultimaAct.toLocaleTimeString("es-AR")} · refresca
+              cada 30s
             </p>
           )}
         </div>
-        <button
-          onClick={() => setModalReserva(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm transition"
-        >
-          + Nueva reserva
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setModalMesa(true)}
+            className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition"
+          >
+            + Mesa
+          </button>
+          <button
+            onClick={() => setModalReserva(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm transition"
+          >
+            + Reserva
+          </button>
+        </div>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-20">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"/>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500" />
         </div>
       ) : (
         <>
           {/* Stats de mesas */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             {Object.entries(contadores).map(([estado, cantidad]) => (
-              <div key={estado} className="bg-gray-800 rounded-xl p-4 text-center">
+              <div
+                key={estado}
+                className="bg-gray-800 rounded-xl p-4 text-center"
+              >
                 <p className="text-gray-400 text-sm capitalize">
                   {MESA_ESTADOS[estado].icon} {MESA_ESTADOS[estado].label}
                 </p>
@@ -279,27 +381,37 @@ export default function Mesas() {
 
           {/* Mapa de mesas */}
           <div className="bg-gray-800 rounded-2xl p-6 mb-8">
-            <h3 className="text-white font-semibold mb-4">🗺️ Estado de mesas</h3>
+            <h3 className="text-white font-semibold mb-4">
+              🗺️ Estado de mesas
+            </h3>
             {mesas.length > 0 ? (
               <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3">
-                {mesas.map(mesa => {
-                  const config = MESA_ESTADOS[mesa.estado]
+                {mesas.map((mesa) => {
+                  const config = MESA_ESTADOS[mesa.estado];
                   return (
                     <div
                       key={mesa.id}
                       className={`border-2 rounded-xl p-3 text-center transition cursor-default ${config.bg}`}
                     >
-                      <p className="text-white font-bold text-lg">#{mesa.numero}</p>
-                      <p className="text-gray-400 text-xs mb-1">{mesa.capacidad} 👤</p>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${config.badge}`}>
+                      <p className="text-white font-bold text-lg">
+                        #{mesa.numero}
+                      </p>
+                      <p className="text-gray-400 text-xs mb-1">
+                        {mesa.capacidad} 👤
+                      </p>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${config.badge}`}
+                      >
                         {config.icon} {config.label}
                       </span>
                     </div>
-                  )
+                  );
                 })}
               </div>
             ) : (
-              <p className="text-gray-400 text-center py-8">No hay mesas registradas</p>
+              <p className="text-gray-400 text-center py-8">
+                No hay mesas registradas
+              </p>
             )}
           </div>
 
@@ -307,15 +419,16 @@ export default function Mesas() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-white font-semibold text-lg">📅 Reservas</h3>
             <input
-              type="date" value={fechaFiltro}
-              onChange={e => setFechaFiltro(e.target.value)}
+              type="date"
+              value={fechaFiltro}
+              onChange={(e) => setFechaFiltro(e.target.value)}
               className="bg-gray-800 text-white rounded-lg px-4 py-2 border border-gray-700 text-sm"
             />
           </div>
 
           {reservas.length > 0 ? (
             <div className="space-y-3">
-              {reservas.map(r => (
+              {reservas.map((r) => (
                 <div key={r.id} className="bg-gray-800 rounded-2xl p-5">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
@@ -323,11 +436,17 @@ export default function Mesas() {
                         {r.cliente_nombre.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-white font-semibold">{r.cliente_nombre}</p>
-                        <p className="text-gray-400 text-sm">📞 {r.cliente_telefono}</p>
+                        <p className="text-white font-semibold">
+                          {r.cliente_nombre}
+                        </p>
+                        <p className="text-gray-400 text-sm">
+                          📞 {r.cliente_telefono}
+                        </p>
                       </div>
                     </div>
-                    <span className={`text-xs px-3 py-1 rounded-full ${RESERVA_ESTADOS[r.estado]}`}>
+                    <span
+                      className={`text-xs px-3 py-1 rounded-full ${RESERVA_ESTADOS[r.estado]}`}
+                    >
                       {r.estado}
                     </span>
                   </div>
@@ -335,33 +454,42 @@ export default function Mesas() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-4">
                     <div>
                       <span className="text-gray-400">Mesa </span>
-                      <span className="text-white font-medium">#{r.mesa_numero}</span>
+                      <span className="text-white font-medium">
+                        #{r.mesa_numero}
+                      </span>
                     </div>
                     <div>
                       <span className="text-gray-400">Personas </span>
-                      <span className="text-white font-medium">{r.personas} 👤</span>
+                      <span className="text-white font-medium">
+                        {r.personas} 👤
+                      </span>
                     </div>
                     <div>
                       <span className="text-gray-400">Hora </span>
                       <span className="text-white font-medium">
-                        {new Date(r.fecha_hora).toLocaleTimeString('es-AR', {
-                          hour: '2-digit', minute: '2-digit'
+                        {new Date(r.fecha_hora).toLocaleTimeString("es-AR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
                         })}
                       </span>
                     </div>
                     <div>
                       <span className="text-gray-400">Creada por </span>
-                      <span className="text-white font-medium">{r.creada_por_nombre || '—'}</span>
+                      <span className="text-white font-medium">
+                        {r.creada_por_nombre || "—"}
+                      </span>
                     </div>
                   </div>
 
                   {r.notas && (
-                    <p className="text-gray-500 text-sm mb-3 italic">📝 {r.notas}</p>
+                    <p className="text-gray-500 text-sm mb-3 italic">
+                      📝 {r.notas}
+                    </p>
                   )}
 
                   {/* Acciones según estado */}
                   <div className="flex gap-2 border-t border-gray-700 pt-3">
-                    {r.estado === 'pendiente' && (
+                    {r.estado === "pendiente" && (
                       <>
                         <button
                           onClick={() => handleConfirmar(r.id)}
@@ -377,7 +505,7 @@ export default function Mesas() {
                         </button>
                       </>
                     )}
-                    {r.estado === 'confirmada' && (
+                    {r.estado === "confirmada" && (
                       <>
                         <button
                           onClick={() => handleCompletar(r.id)}
@@ -393,7 +521,8 @@ export default function Mesas() {
                         </button>
                       </>
                     )}
-                    {(r.estado === 'cancelada' || r.estado === 'completada') && (
+                    {(r.estado === "cancelada" ||
+                      r.estado === "completada") && (
                       <span className="text-gray-600 text-xs py-1.5">
                         Sin acciones disponibles
                       </span>
@@ -414,10 +543,13 @@ export default function Mesas() {
       {modalReserva && (
         <ModalReserva
           mesas={mesas}
-          onGuardar={() => { setModalReserva(false); fetchData(true) }}
+          onGuardar={() => {
+            setModalReserva(false);
+            fetchData(true);
+          }}
           onCerrar={() => setModalReserva(false)}
         />
       )}
     </Layout>
-  )
+  );
 }
